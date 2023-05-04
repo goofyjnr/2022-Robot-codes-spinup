@@ -8,14 +8,15 @@ using code = vision::code;
 brain  Brain;
 
 // VEXcode device constructors
-motor leftMotorA = motor(PORT20, ratio18_1, false);
-motor leftMotorB = motor(PORT11, ratio18_1, false);
+motor leftMotorA = motor(PORT11, ratio18_1, true);
+motor leftMotorB = motor(PORT10, ratio18_1, true);
 motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
-motor rightMotorA = motor(PORT18, ratio18_1, true);
-motor rightMotorB = motor(PORT15, ratio18_1, true);
+motor rightMotorA = motor(PORT5, ratio18_1, false);
+motor rightMotorB = motor(PORT19, ratio18_1, false);
 motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB);
 drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 295, 40, mm, 1);
-motor spiner = motor(PORT12, ratio18_1, false);
+motor spiner = motor(PORT4, ratio18_1, false);
+motor expands = motor(PORT18, ratio36_1, false);
 controller Controller1 = controller(primary);
 
 // VEXcode generated functions
@@ -23,6 +24,7 @@ controller Controller1 = controller(primary);
 bool RemoteControlCodeEnabled = true;
 // define variables used for controlling motors based on controller inputs
 bool Controller1RightShoulderControlMotorsStopped = true;
+bool Controller1LeftShoulderControlMotorsStopped = true;
 bool DrivetrainNeedsToBeStopped_Controller1 = true;
 
 // define a task that will handle monitoring inputs from Controller1
@@ -34,8 +36,8 @@ int rc_auto_loop_function_Controller1() {
       // calculate the drivetrain motor velocities from the controller joystick axies
       // left = Axis3 + Axis4
       // right = Axis3 - Axis4
-      int drivetrainLeftSideSpeed = Controller1.Axis3.position() - Controller1.Axis4.position();
-      int drivetrainRightSideSpeed = Controller1.Axis3.position() + Controller1.Axis4.position();
+      int drivetrainLeftSideSpeed = Controller1.Axis3.position() + Controller1.Axis4.position();
+      int drivetrainRightSideSpeed = Controller1.Axis3.position() - Controller1.Axis4.position();
       
       // check if the values are inside of the deadband range
       if (abs(drivetrainLeftSideSpeed) < 5 && abs(drivetrainRightSideSpeed) < 5) {
@@ -64,15 +66,28 @@ int rc_auto_loop_function_Controller1() {
       }
       // check the ButtonR1/ButtonR2 status to control Motor12
       if (Controller1.ButtonR1.pressing()) {
-        spiner.spin(forward);
+        spiner.spin(directionType::rev,90,velocityUnits::pct);
         Controller1RightShoulderControlMotorsStopped = false;
       } else if (Controller1.ButtonR2.pressing()) {
-        spiner.spin(reverse);
+        spiner.spin(directionType::fwd,90,velocityUnits::pct);
         Controller1RightShoulderControlMotorsStopped = false;
       } else if (!Controller1RightShoulderControlMotorsStopped) {
-        spiner.stop();
+        spiner.stop(brakeType::coast);
         // set the toggle so that we don't constantly tell the motor to stop when the buttons are released
         Controller1RightShoulderControlMotorsStopped = true;
+      }
+
+      if (Controller1.ButtonL1.pressing()) {
+        expands.spin(directionType::fwd,50,velocityUnits::pct);
+        //Drivetrain.spin(directionType::fwd,50,velocityUnits::pct);;
+        Controller1LeftShoulderControlMotorsStopped = false;}
+      else if (Controller1.ButtonL2.pressing()) {
+        expands.spin(directionType::rev,50,velocityUnits::pct);
+        Controller1LeftShoulderControlMotorsStopped = false;
+      } else if (!Controller1LeftShoulderControlMotorsStopped) {
+        expands.stop(brakeType::hold);
+        // set the toggle so that we don't constantly tell the motor to stop when the buttons are released
+        Controller1LeftShoulderControlMotorsStopped = true;
       }
     }
     // wait before repeating the process
